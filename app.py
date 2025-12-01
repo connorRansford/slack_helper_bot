@@ -22,6 +22,8 @@ LEADERS_CHANNEL_ID = os.getenv("LEADERS_CHANNEL_ID")
 # Use env var if set; otherwise default to the prod channel
 SALES_CHANNEL_ID = os.getenv("SALES_CHANNEL_ID", DEFAULT_SALES_CHANNEL_ID)
 
+print(f"[startup] SALES_CHANNEL_ID = {SALES_CHANNEL_ID}")
+
 
 app = App(token=SLACK_BOT_TOKEN)
 
