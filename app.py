@@ -12,14 +12,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # when testing in dev
-TEST_CHANNEL_ID = "C09TCJH10JX"  # connor-dev
+TEST_CHANNEL_ID = "C09TCJH10JX"      # connor-dev (for local testing)
+DEFAULT_SALES_CHANNEL_ID = "C09LD0UH38E"  # #sales-force-won
 
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN")
 LEADERS_CHANNEL_ID = os.getenv("LEADERS_CHANNEL_ID")
 
-# For now, always use the test channel as "sales" channel
-SALES_CHANNEL_ID = TEST_CHANNEL_ID  # or os.getenv("SALES_CHANNEL_ID")
+# Use env var if set; otherwise default to the prod channel
+SALES_CHANNEL_ID = os.getenv("SALES_CHANNEL_ID", DEFAULT_SALES_CHANNEL_ID)
+
 
 app = App(token=SLACK_BOT_TOKEN)
 
@@ -167,31 +169,6 @@ def schedule_unclosed_reminder(root_ts: str, user_id: str, delay_seconds: int = 
     t = threading.Timer(delay_seconds, _check)
     t.daemon = True
     t.start()
-
-
-def schedule_next_leaderboard():
-    """Schedule the next Friday 3pm leaderboard post."""
-    now = datetime.now()
-
-    # Find next Friday at 3pm
-    days_ahead = (4 - now.weekday()) % 7  # 4 = Friday
-    candidate = datetime(now.year, now.month, now.day, 15, 0) + timedelta(days=days_ahead)
-    if candidate <= now:
-        candidate += timedelta(days=7)
-
-    delay = (candidate - now).total_seconds()
-    print(f"[leaderboard] scheduling next leaderboard for {candidate} (in {delay:.0f}s)")
-
-    def _run():
-        try:
-            post_weekly_leaderboard()
-        finally:
-            schedule_next_leaderboard()
-
-    t = threading.Timer(delay, _run)
-    t.daemon = True
-    t.start()
-
 
 
 def post_weekly_leaderboard():
@@ -509,8 +486,6 @@ def handle_mark_lead_done(ack, body, client, logger):
 
 # ---- MAIN ----
 if __name__ == "__main__":
-    # Kick off the weekly leaderboard scheduler
-    schedule_next_leaderboard()
 
     handler = SocketModeHandler(app, SLACK_APP_TOKEN)
     handler.start()
